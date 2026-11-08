@@ -8,6 +8,9 @@ const Parcel = mongoose.model('Parcel', new mongoose.Schema({
   sizeClass: { type: String, enum: ['S', 'M', 'L'], required: true },
   doorId: { type: String, required: true },
   droppedAt: { type: Date, required: true },
+  codeHash: { type: String, required: true },
+  codeExpiresAt: { type: Date, required: true },
+  codeUsedAt: { type: Date, default: null },
   collectedAt: { type: Date, default: null },
   state: { type: String, enum: ['holding', 'collected'], default: 'holding' }
 }, { collection: 'parcels' }));
@@ -26,8 +29,13 @@ function byId(parcelId) {
   return Parcel.findOne({ parcelId }).lean();
 }
 
+/** Whether a parcel still waiting in its door already has this code hash (two waiting codes must differ). */
+function codeHashWaiting(codeHash, session) {
+  return Parcel.exists({ codeHash, state: 'holding' }).session(session);
+}
+
 function byIds(parcelIds) {
   return Parcel.find({ parcelId: { $in: parcelIds } }).lean();
 }
 
-module.exports = { nextId, insert, byId, byIds };
+module.exports = { nextId, insert, byId, codeHashWaiting, byIds };
